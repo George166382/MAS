@@ -42,7 +42,7 @@ KAFKA_BOOTSTRAP   = os.getenv("KAFKA_BOOTSTRAP",   "localhost:9092")
 INPUT_TOPIC       = os.getenv("INPUT_TOPIC",        "audio.raw")
 OUTPUT_TOPIC      = os.getenv("OUTPUT_TOPIC",       "audio.transcribed")
 WHISPER_MODEL     = os.getenv("WHISPER_MODEL",      "base")
-LANGUAGE          = os.getenv("TRANSCRIPTION_LANG", "ro")
+LANGUAGE          = os.getenv("TRANSCRIPTION_LANG", "en")
 
 FILE_READY_TIMEOUT  = int(os.getenv("FILE_READY_TIMEOUT",  "15"))   # seconds
 FILE_POLL_INTERVAL  = float(os.getenv("FILE_POLL_INTERVAL", "0.5"))  # seconds
