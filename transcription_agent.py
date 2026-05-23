@@ -41,6 +41,7 @@ log = logging.getLogger("transcription_agent")
 KAFKA_BOOTSTRAP   = os.getenv("KAFKA_BOOTSTRAP",   "localhost:9092")
 INPUT_TOPIC       = os.getenv("INPUT_TOPIC",        "audio.raw")
 OUTPUT_TOPIC      = os.getenv("OUTPUT_TOPIC",       "audio.transcribed")
+DLQ_TOPIC         = os.getenv("DLQ_TOPIC",          "audio.raw.dlq")
 WHISPER_MODEL     = os.getenv("WHISPER_MODEL",      "base")
 LANGUAGE          = os.getenv("TRANSCRIPTION_LANG", "ro")
 
@@ -286,10 +287,23 @@ while True:
                 try:
                     handle_message(msg.value)
                 except KeyError as exc:
-                    log.warning("Skipping malformed message (missing key: %s)", exc)
+                    log.warning("Malformed message (missing key: %s)", exc)
                 except Exception as exc:
                     log.error("Failed to process message: %s", exc)
+                    dlq_message = {
+                        "metadata": msg.value.get("metadata", {}),
+                        "payload": msg.value.get("payload", {}),
+                        "error": str(exc),
+                        "failed_topic": INPUT_TOPIC,
+                        "retry_count": msg.value.get("retry_count", 0),
+                    }
+                    try:
+                        producer.send(DLQ_TOPIC, dlq_message)
+                        producer.flush()
+                        log.warning("Published failed message to DLQ: %s", DLQ_TOPIC)
+                    except Exception as dlq_exc:
+                        log.error("Failed to publish to DLQ: %s", dlq_exc)
 
     except Exception as kafka_exc:
-        log.error("Kafka poll error: %s — retrying in 2 s", kafka_exc)
+        log.error("Kafka poll error: %s — retrying in 2s", kafka_exc)
         time.sleep(2)
