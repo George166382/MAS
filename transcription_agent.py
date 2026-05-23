@@ -265,6 +265,12 @@ def handle_message(msg_value: dict) -> None:
     producer.flush()
     log.info("Published transcription (%d chars): %.120s…", len(text), text)
 
+    try:
+        os.remove(file_location)
+        log.info("Garbage collection: Deleted processed file %s", file_location)
+    except OSError as e:
+        log.warning("Garbage collection failed for %s: %s", file_location, e)
+
 
 # ---------------------------------------------------------------------------
 # Main loop
